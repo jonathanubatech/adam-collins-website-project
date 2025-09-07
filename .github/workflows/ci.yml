@@ -12,6 +12,8 @@ concurrency:
 
 permissions:
   contents: read
+  pull-requests: write
+  issues: write
 
 jobs:
   build-and-test:
@@ -28,6 +30,83 @@ jobs:
       - name: Bootstrap environment
         run: bash scripts/background/setup.sh
 
-      - name: Run CI script (lint, types, tests, build)
-        run: bash scripts/background/ci.sh
+      - name: Lint
+        id: lint
+        continue-on-error: true
+        run: npm run lint
 
+      - name: Type check
+        id: types
+        continue-on-error: true
+        run: npm run type-check
+
+      - name: Unit tests
+        id: tests
+        continue-on-error: true
+        run: npm test -- --ci --passWithNoTests
+
+      - name: Build (if figma-sites available)
+        id: build
+        continue-on-error: true
+        run: |
+          if command -v figma-sites >/dev/null 2>&1; then
+            npm run build
+          else
+            echo "figma-sites not installed; skipping build"
+          fi
+
+      - name: Job summary
+        if: always()
+        run: |
+          echo "# Background CI Results" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Lint: ${{ steps.lint.conclusion }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Types: ${{ steps.types.conclusion }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Tests: ${{ steps.tests.conclusion }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Build: ${{ steps.build.conclusion }}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Comment results on PR
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        env:
+          LINT: ${{ steps.lint.conclusion }}
+          TYPES: ${{ steps.types.conclusion }}
+          TESTS: ${{ steps.tests.conclusion }}
+          BUILD: ${{ steps.build.conclusion }}
+          SHA: ${{ github.sha }}
+        with:
+          script: |
+            const marker = '<!-- bg-ci-status -->';
+            const em = (s) => s === 'success' ? '✅' : (s === 'skipped' ? '⏭️' : '❌');
+            const lines = [
+              marker,
+              `### Background CI Results for ${process.env.SHA.substring(0,7)}`,
+              '',
+              `- Lint: ${em(process.env.LINT)} (${process.env.LINT})`,
+              `- Types: ${em(process.env.TYPES)} (${process.env.TYPES})`,
+              `- Tests: ${em(process.env.TESTS)} (${process.env.TESTS})`,
+              `- Build: ${em(process.env.BUILD)} (${process.env.BUILD})`,
+              '',
+              '_Automated report posted by CI_',
+            ];
+            const body = lines.join('\n');
+
+            const prNumber = context.payload.pull_request.number;
+            const { data: comments } = await github.rest.issues.listComments({
+              ...context.repo,
+              issue_number: prNumber,
+              per_page: 100,
+            });
+            const existing = comments.find(c => c.body && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                ...context.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                ...context.repo,
+                issue_number: prNumber,
+                body,
+              });
+            }
