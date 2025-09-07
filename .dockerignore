@@ -1,0 +1,30 @@
+# Reduce Docker build context to save memory/IO
+node_modules
+npm-debug.log*
+yarn-error.log*
+pnpm-lock.yaml
+.pnpm-store
+
+# VCS and IDE
+.git
+.gitignore
+.gitattributes
+.idea
+.vscode
+.DS_Store
+
+# Build outputs and caches
+dist
+build
+.next
+coverage
+tmp
+logs
+reports
+
+# Local artifacts not needed in container
+figma_files
+.cookies
+.taskmaster
+.claude
+
