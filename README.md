@@ -220,6 +220,16 @@ npm run analyze
 - **[[11-Prompt Library/Prompt Library Overview|Prompt Library]]** - AI prompts and templates
 - **[[08-Team Architecture/Claude Development Workflow Guide|Claude Workflow]]** - AI-assisted development
 
+## 🧠 Background Agents
+
+- Setup guide: `docs/background-agents-setup.md`
+- Docker runtime: `background.Dockerfile`
+- Agent commands: `scripts/background/setup.sh`, `scripts/background/ci.sh`
+
+## 📝 Contributing & PRs
+- Guidelines: `CONTRIBUTING.md`
+- PR Template: `.github/PULL_REQUEST_TEMPLATE.md`
+
 ## 🆘 Troubleshooting
 
 ### Common Issues
@@ -257,6 +267,14 @@ npm run analyze
 ---
 
 ## Change Log
+
+### Version 1.1.0 - 2025-09-07
+**Type:** Tooling & Docs  
+**Changes:**
+- Add Background Agents runtime (`background.Dockerfile`) and scripts
+- Add `.dockerignore` and Docker cleanup helper
+- Add Background Agents setup guide and contribution/PR docs
+- Link docs from README
 
 ### Version 1.0.0 - 2025-01-27
 **Author:** Claude Assistant  
